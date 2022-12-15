@@ -507,7 +507,7 @@ class Analyzer():
             ##################
             if clustering_type == "Online_Epoch_KMeans":
                 delta_in_ms = int((date_time - last_epoch_update).total_seconds() * 1000)
-                if delta_in_ms >= 1000:
+                if delta_in_ms >= 100:
                     last_epoch_update = date_time
                     clustering.fit_batch(batch_packets, batch_ip_lens)
                     batch_packets = []
