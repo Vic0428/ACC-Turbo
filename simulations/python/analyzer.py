@@ -141,6 +141,10 @@ class Analyzer():
             batch_packets = []
             clustering = KMeans(n_clusters=num_clusters)
 
+        elif (clustering_type == 'Online_Epoch_KMeans'):
+            batch_packets = []
+            batch_ip_lens = []
+            clustering = online_kmeans.OnlineEpochKmeans(num_clusters, feature_set)
         else:
             raise Exception("Clustering algorithm not supported: {}".format(clustering_type))
 
@@ -298,7 +302,7 @@ class Analyzer():
                     or (date_time > tftp_end)):
 
                     continue
-                
+
             # We define the initial time reference
             if is_first_packet == True:
                 
@@ -308,7 +312,7 @@ class Analyzer():
                 # We initialize the time counters
                 last_reset_clusters = date_time
                 last_monitoring_update = date_time
-                last_update_priorities = date_time
+                last_epoch_update = date_time
                 is_first_packet = False
 
             # Unpack the Ethernet frame
@@ -424,7 +428,7 @@ class Analyzer():
             packet = []
             for feature in feature_set.split(","):
                 packet.append(full_packet[feature])
-             
+
             # Cluster that packet
             if clustering_type == "Online_Range_Fast_Anime":
                 selected_cluster = clustering.fit_fast(packet, ip.len, "anime")
@@ -460,16 +464,12 @@ class Analyzer():
 
             elif clustering_type == "Online_KMeans":
                 selected_cluster = clustering.fit_fast(packet, ip.len)
+            elif clustering_type == "Online_Epoch_KMeans":
+                # We just append the generated packets to a batch of packets
+                batch_packets.append(packet)
+                batch_ip_lens.append(ip.len)
             else:
                 raise Exception("Clustering algorithm not supported: {}".format(clustering_type))
-
-            # We compute the packet priority (only possible for online approaches)
-            packet_priority = 0
-            if (clustering_type.split("_")[0] == "Online"):
-                    
-                    # We return the priority assigned to the packet
-                    packet_priority = selected_cluster.get_priority()
-
             ##################
             # We perform the per-packet logging
             ##################
@@ -505,60 +505,18 @@ class Analyzer():
             ##################
             # We perform the per-monitoring-window logging
             ##################
+            if clustering_type == "Online_Epoch_KMeans":
+                delta_in_ms = int((date_time - last_epoch_update).total_seconds() * 1000)
+                if delta_in_ms >= 1000:
+                    last_epoch_update = date_time
+                    clustering.fit_batch(batch_packets, batch_ip_lens)
+                    batch_packets = []
+                    batch_ip_lens = []
 
             # We update time buckets for monitoring
             if (monitoring_window != -1):
                 difference_tracking = (date_time-last_monitoring_update).total_seconds()
                 if (difference_tracking > monitoring_window):
-
-                    # Throughput logging
-                    if throughput_logging == "True":
-                        throughput_file.write(str(date_time) + "," + str(current_throughput_benign) + "," + str(current_throughput_malicious) + "\n")                    
-                        current_throughput_benign = 0
-                        current_throughput_malicious = 0
-
-                    # Throughput priorities logging
-                    if throughput_priorities_logging == "True":
-                        throughput_priorities_file.write(str(date_time))
-                        for current_prio in range(num_clusters):
-                            throughput_priorities_file.write("," + str(throughput_per_priority[current_prio]))
-                            throughput_per_priority[current_prio] = 0 # We reset the counters
-                        throughput_priorities_file.write("\n")
-
-                    # Priority-performance logging
-                    if priority_performance_logging == "True":
-
-                        # We compute the average priorities
-                        if current_benign_packets == 0:
-                            benign_average_priority = -1
-                        else:
-                            benign_average_priority = current_benign_priorities/current_benign_packets
-                        
-                        if current_malicious_packets == 0:
-                            malicious_average_priority = -1
-                        else:
-                            malicious_average_priority = current_malicious_priorities/current_malicious_packets
-
-                        # We compute the score. If in that window we didn't see packets of one of the two types, we just skip that window
-                        if (benign_average_priority != -1) and (malicious_average_priority != -1):
-                            if (malicious_average_priority < benign_average_priority):
-                                score = 1
-                            else:
-                                score = 0
-
-                            # We log the result for the iteration if temporal logging is enabled                
-                            if priority_performance_time_logging == "True":
-                                priority_performance_time_file.write(str(date_time) + "," + str(benign_average_priority) + "," + str(malicious_average_priority) + "," + str(score) + "\n")
-                            
-                            # We aggregate the results for overall logging
-                            sum_scores = sum_scores + score
-                            number_iterations_score = number_iterations_score + 1
-
-                        current_benign_packets = 0
-                        current_malicious_packets = 0
-                        current_benign_priorities = 0
-                        current_malicious_priorities = 0
-
                     # Clustering-performance logging
                     if clustering_performance_logging == "True":
                     
@@ -586,6 +544,12 @@ class Analyzer():
                             or clustering_type == "Online_Representative_Exhaustive" or clustering_type == "Online_Representative_Exhaustive_Offline-Centroid-Initialization" 
                             or clustering_type == "Online_Random_Fast" or clustering_type == "Online_Hash"
                             or clustering_type == "Online_KMeans"):
+                            result_labels = clustering.get_labels()
+                        elif clustering_type == "Online_Epoch_KMeans":
+                            # Fit the avaiable batch packets
+                            clustering.fit_batch(batch_packets, batch_ip_lens)
+                            batch_packets = []
+                            batch_ip_lens = []
                             result_labels = clustering.get_labels()
                         else:
                             # Offline k-means (we need to fit the whole packet batch)
@@ -623,6 +587,7 @@ class Analyzer():
                                 purity = purity + majority_malicious_counter[n]
                                 true_positive_rate = true_positive_rate + majority_malicious_counter[n]
 
+                        print("#packes inside this monitoring interval: {}".format(len(result_labels)))
                         # We only study the intervals in which we have both benign and malicious traffic, otherwise the clustering makes no sense
                         if (len(result_labels) != 0) and (total_benign_packets_interval != 0) and (total_malicious_packets_interval != 0):
                             recall_benign = (true_negative_rate/total_benign_packets_interval)*100
@@ -651,137 +616,13 @@ class Analyzer():
                             or clustering_type == "Online_Representative_Fast" or clustering_type == "Online_Representative_Fast_Offline-Centroid-Initialization" 
                             or clustering_type == "Online_Representative_Exhaustive" or clustering_type == "Online_Representative_Exhaustive_Offline-Centroid-Initialization" 
                             or clustering_type == "Online_Random_Fast" or clustering_type == "Online_Hash"
-                            or clustering_type == "Online_KMeans"):
+                            or clustering_type == "Online_KMeans"
+                            or clustering_type == "Online_Epoch_KMeans"):
                             clustering.reset_labels() # Note that this does not reset the clusters, nor their centroids
                         else:
                             # Offline k-means
                             clustering = KMeans(n_clusters=num_clusters) # Here we just create a new instance, such that we don't have previous labels
 
-                    # Traffic-distribution logging
-                    if traffic_distributions_logging == "True":
-
-                        # Safety bound (we don't store more than 50 periods of distributions)
-                        if (period_counter < 50):
-
-                            for feature in feature_set.split(","):
-                                distrib_file = open(output_logfiles_seed + feature + "_distrib_" + str(period_counter) + ".dat", 'w+')
-                                distrib_file.write("#    " + feature + "_distrib_benign    " + feature + "_distrib_attack\n")
-
-                                for line in range(0,len(distrib_benign[feature])):
-                                    distrib_file.write("%s   %s   %s\n" % (line, distrib_benign[feature][line], distrib_malicious[feature][line]))
-                                distrib_file.close()
-                            period_counter = period_counter + 1
-
-                            # We reset the distributions, for the next period
-                            distrib_benign = {}
-                            distrib_malicious = {}
-
-                            for feature in feature_set.split(","):
-                                distrib_benign[feature] = {}
-                                distrib_malicious[feature] = {}
-
-                                if ((feature == "len") or (feature == "id") or (feature == "sport") or (feature == "dport")):
-                                    for a in range(0, 65536):
-                                        distrib_benign[feature][a] = 0
-                                        distrib_malicious[feature][a] = 0
-                                elif ((feature == "ttl") or (feature == "proto") or 
-                                    (feature == "src0") or (feature == "src1") or (feature == "src2") or (feature == "src3") or 
-                                    (feature == "dst0") or (feature == "dst1") or (feature == "dst2") or (feature == "dst3")):
-                                    for a in range(0, 256):
-                                        distrib_benign[feature][a] = 0
-                                        distrib_malicious[feature][a] = 0
-                                else:
-                                    # frag_offset
-                                    for a in range(0, 8192):
-                                        distrib_benign[feature][a] = 0
-                                        distrib_malicious[feature][a] = 0
-
-                        else:
-                            print("You have reached the maximum number of distribution periods that you can store (50)")
-
-                    # Traffic-distribution histogram logging
-                    if traffic_distributions_histogram_logging == "True":
-
-                        # We just print the slices we want
-                        if (hist_period_counter < 50):
-
-                            for feature in feature_set.split(","):
-                                histogram_benign_file = open(output_logfiles_seed + feature + "_distrib_histogram_benign_" + str(hist_period_counter) + ".dat", 'w+')
-                                histogram_malicious_file = open(output_logfiles_seed + feature + "_distrib_histogram_malicious_" + str(hist_period_counter) + ".dat", 'w+')
-
-                                n_benign = {}
-                                bins_benign = {}
-                                patches_benign = {}
-
-                                n_malicious = {}
-                                bins_malicious = {}
-                                patches_malicious = {}
-
-                                if ((feature == "len") or (feature == "id") or (feature == "sport") or (feature == "dport")):
-                                    feature_max = 65536
-                                elif ((feature == "ttl") or (feature == "proto") or 
-                                    (feature == "src0") or (feature == "src1") or (feature == "src2") or (feature == "src3") or 
-                                    (feature == "dst0") or (feature == "dst1") or (feature == "dst2") or (feature == "dst3")):
-                                    feature_max = 256
-                                elif (feature == "frag_offset"):
-                                    feature_max = 8192
-                                else:
-                                    raise Exception("Feature not supported: {}".format(feature))
-                                
-                                histogram_benign_file.write("#")
-                                histogram_malicious_file.write("#")
-
-                                for prio in range(num_clusters):
-                                    label_name = "Priority " + str(prio)
-                                    histogram_benign_file.write("    "  + label_name)
-                                    histogram_malicious_file.write("    "  + label_name)
-                                    
-                                    # n is the height of each bin in the histogram, bins is the position of the bin in the x axis
-                                    n_benign[prio], bins_benign[prio], patches_benign[prio] = plt.hist(histogram_benign[feature][prio], bins=range(0, feature_max), histtype='step', label=label_name)
-                                    n_malicious[prio], bins_malicious[prio], patches_malicious[prio] = plt.hist(histogram_malicious[feature][prio], bins=range(0, feature_max), histtype='step', label=label_name)
-
-                                histogram_benign_file.write("\n")
-                                histogram_malicious_file.write("\n")
-
-                                for line in range(0,len(n_benign[prio])):
-                                    histogram_benign_file.write(str(bins_benign[prio][line]))
-                                    for prio in range(num_clusters):
-                                        histogram_benign_file.write("    " + str(n_benign[prio][line]))
-                                    histogram_benign_file.write("\n")
-
-                                for line in range(0,len(n_malicious[prio])):
-                                    histogram_malicious_file.write(str(bins_malicious[prio][line]))
-                                    for prio in range(num_clusters):
-                                        histogram_malicious_file.write("    " + str(n_malicious[prio][line]))
-                                    histogram_malicious_file.write("\n")
-
-                            hist_period_counter = hist_period_counter + 1
-
-                            # We reset the histograms, for the next period
-                            histogram_benign = {}
-                            histogram_malicious = {}
-
-                            for feature_name in feature_set.split(","):
-                                histogram_benign[feature_name] = {}
-                                histogram_malicious[feature_name] = {}
-
-                                for prio in range(num_clusters):
-                                    histogram_benign[feature_name][prio] = []
-                                    histogram_malicious[feature_name][prio] = []
-
-                        else:
-                            print("You have reached the maximum number of histograms periods that you can store (50)")
-
-
-                    # Signature-evaluation logging
-                    if signature_evaluation_logging == "True":
-
-                        for feature in feature_set.split(","):
-
-                            # We have already initialized the file, so we just want to append the logging
-                            signature_evaluation_file = open(output_logfiles_seed + feature + ".dat",'a')
-                            signature_evaluation_file.write("\n" + str(date_time) + str(clustering.write_cluster_signatures(feature)))
-                            signature_evaluation_file.close()
 
                     # We update the time tracker
                     last_monitoring_update = date_time
@@ -802,7 +643,9 @@ class Analyzer():
                         or clustering_type == "Online_Representative_Fast" or clustering_type == "Online_Representative_Fast_Offline-Centroid-Initialization" 
                         or clustering_type == "Online_Representative_Exhaustive" or clustering_type == "Online_Representative_Exhaustive_Offline-Centroid-Initialization" 
                         or clustering_type == "Online_Random_Fast" or clustering_type == "Online_Hash"
-                        or clustering_type == "Online_KMeans"):
+                        or clustering_type == "Online_KMeans"
+                        or clustering_type == "Online_Epoch_KMeans"
+                        ):
                         clustering.reset_clusters()
 
                         # If we decided offline initialization, instead of delete the clusters, we create N clusters and initialize them with
