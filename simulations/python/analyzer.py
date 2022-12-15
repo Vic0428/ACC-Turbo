@@ -824,7 +824,8 @@ class Analyzer():
                             or clustering_type == "Online_Range_Exhaustive_Manhattan"  or clustering_type == "Online_Range_Exhaustive_Anime"
                             or clustering_type == "Online_Representative_Fast" or clustering_type == "Online_Representative_Fast_Offline-Centroid-Initialization" 
                             or clustering_type == "Online_Representative_Exhaustive" or clustering_type == "Online_Representative_Exhaustive_Offline-Centroid-Initialization" 
-                            or clustering_type == "Online_Random_Fast" or clustering_type == "Online_Hash"):
+                            or clustering_type == "Online_Random_Fast" or clustering_type == "Online_Hash"
+                            or clustering_type == "Online_KMeans"):
                             result_labels = clustering.get_labels()
                         else:
                             # Offline k-means (we need to fit the whole packet batch)
@@ -889,7 +890,8 @@ class Analyzer():
                             or clustering_type == "Online_Range_Exhaustive_Manhattan"  or clustering_type == "Online_Range_Exhaustive_Anime"
                             or clustering_type == "Online_Representative_Fast" or clustering_type == "Online_Representative_Fast_Offline-Centroid-Initialization" 
                             or clustering_type == "Online_Representative_Exhaustive" or clustering_type == "Online_Representative_Exhaustive_Offline-Centroid-Initialization" 
-                            or clustering_type == "Online_Random_Fast" or clustering_type == "Online_Hash"):
+                            or clustering_type == "Online_Random_Fast" or clustering_type == "Online_Hash"
+                            or clustering_type == "Online_KMeans"):
                             clustering.reset_labels() # Note that this does not reset the clusters, nor their centroids
                         else:
                             # Offline k-means
@@ -1039,7 +1041,8 @@ class Analyzer():
                         or clustering_type == "Online_Range_Exhaustive_Manhattan"  or clustering_type == "Online_Range_Exhaustive_Anime"
                         or clustering_type == "Online_Representative_Fast" or clustering_type == "Online_Representative_Fast_Offline-Centroid-Initialization" 
                         or clustering_type == "Online_Representative_Exhaustive" or clustering_type == "Online_Representative_Exhaustive_Offline-Centroid-Initialization" 
-                        or clustering_type == "Online_Random_Fast" or clustering_type == "Online_Hash"):
+                        or clustering_type == "Online_Random_Fast" or clustering_type == "Online_Hash"
+                        or clustering_type == "Online_KMeans"):
                         clustering.reset_clusters()
 
                         # If we decided offline initialization, instead of delete the clusters, we create N clusters and initialize them with
