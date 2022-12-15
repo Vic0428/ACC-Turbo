@@ -8,7 +8,7 @@ import matplotlib
 import random
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from clustering import range_based_clustering, representative_based_clustering
+from clustering import range_based_clustering, representative_based_clustering, online_kmeans
 from sklearn.cluster import KMeans
 import numpy as np
 
@@ -134,6 +134,8 @@ class Analyzer():
                 if(clustering_type.split("_")[3] == "Offline-Centroid-Initialization"):
                     batch_packets_offline = []
                     offline = KMeans(n_clusters=num_clusters)
+        elif (clustering_type == 'Online_KMeans'):
+            clustering = online_kmeans.OnlineKmeans(num_clusters, feature_set)
 
         elif (clustering_type.split("_")[1] == "KMeans"):
             batch_packets = []
@@ -594,6 +596,8 @@ class Analyzer():
                 # We just append the generated packet to a batch of packets, which we will then cluster together
                 batch_packets.append(packet)
 
+            elif clustering_type == "Online_KMeans":
+                selected_cluster = clustering.fit_fast(packet, ip.len)
             else:
                 raise Exception("Clustering algorithm not supported: {}".format(clustering_type))
 
