@@ -237,10 +237,26 @@ class OnlineEpochKmeans(clustering_algorithm.ClusteringAlgorithm):
             assert len(self.cluster_list) < self.num_clusters
             self.cluster_list.append(new_cluster)
     
-    def fit_batch(self, batch_packets, batch_ip_lens):
+    def fit_batch(self, batch_packets, batch_ip_lens, perfect=True):
         print("Invoke to fit {} packets".format(len(batch_packets)))
+        mp = {}
         for packet, ip_len in zip(batch_packets, batch_ip_lens):
-            self.fit_fast(packet, ip_len)
+            if perfect:
+                ip_val = 0
+                for num in packet:
+                    ip_val += 256 * ip_val + num
+
+                if ip_val not in mp:
+                    mp[ip_val] = [(packet, ip_len)]
+                else:
+                    mp[ip_val].append((packet, ip_len))
+            else:
+                pass
+        
+        # Update based on aggregation result
+        for ip_val in mp.keys():
+            for packet, ip_len in mp[ip_val]:
+                self.fit_fast(packet, ip_len)
 
 	# Computes the result of clustering one new packet following the fast version of the representative_based clustering algorithm.
     def fit_fast(self, packet, ip_len):
