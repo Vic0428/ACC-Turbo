@@ -213,7 +213,7 @@ class OnlineEpochKmeans(clustering_algorithm.ClusteringAlgorithm):
 
     # Method to update the centroid of "dst_cluster" with the information of "src_cluster"
     def update_center(self, src_cluster, dst_cluster):
-        ratio = 1 / dst_cluster.packets
+        ratio = src_cluster.packets / dst_cluster.packets
         for feature in self.feature_list:
            dst_cluster.signature[feature] = ((dst_cluster.signature[feature][0] + ratio*(src_cluster.signature[feature][0]- dst_cluster.signature[feature][0])),  (dst_cluster.signature[feature][1] + ratio*(src_cluster.signature[feature][1] - dst_cluster.signature[feature][1])))
         
@@ -242,24 +242,99 @@ class OnlineEpochKmeans(clustering_algorithm.ClusteringAlgorithm):
         mp_key = {}
         mp_val = {}
         for packet, ip_len in zip(batch_packets, batch_ip_lens):
-            if perfect:
-                # Use a perfect map to do the epoch-based aggregation 
-                ip_val = 0
-                for num in packet:
-                    ip_val += 256 * ip_val + num
+            # Use a perfect map to do the epoch-based aggregation 
+            ip_val = 0
+            for num in packet:
+                ip_val += 256 * ip_val + num
 
-                if ip_val not in mp_key:
-                    mp_key[ip_val] = packet
-                    mp_val[ip_val] = 1
-                else:
-                    mp_val[ip_val] += 1
+            if ip_val not in mp_key:
+                mp_key[ip_val] = packet
+                mp_val[ip_val] = 1
             else:
-                pass
-        
+                mp_val[ip_val] += 1
+
+        label_mp = {}        
         # Update based on aggregation result
         for ip_val in mp_key.keys():
-            for _ in range(mp_val[ip_val]):
-                self.fit_fast(mp_key[ip_val], 0)
+            packet = mp_key[ip_val]
+            pkt_cnt = mp_val[ip_val]
+            cid = self.fit_batch_helper(packet, pkt_cnt)
+            label_mp[ip_val] = cid
+
+        for packet in batch_packets:
+            ip_val = 0
+            for num in packet:
+                ip_val += 256 * ip_val + num
+            self.append_label(label_mp[ip_val])
+
+
+
+
+	# Computes the result of clustering one new packet following the fast version of the representative_based clustering algorithm.
+    def fit_batch_helper(self, packet, pkt_cnt):
+        i = 0
+        packet_signature = {}
+        assert len(packet) == len(self.feature_list)
+        for feature in self.feature_list:
+            packet_signature[feature] = (packet[i],packet[i])
+            i = i + 1
+
+        # Create new cluster for the packet (note that we do not update current_cluster_id straight away, since we will only use it if thee new_cluster is actually created)
+        new_cluster = cluster.Cluster(packet_signature, self.current_cluster_id, self.num_clusters, self.feature_list, 0)
+        new_cluster.packets = pkt_cnt
+
+        # If the cluster list is empty, we just add the new custer to the list
+        if len(self.cluster_list) == 0:
+
+            # Append the new cluster directly to the list
+            self.cluster_list.append(new_cluster)
+            selected_cluster = new_cluster
+            self.current_cluster_id = self.current_cluster_id + 1
+
+        # If it is not empty, we compute the minimum distance (to the clusters in the list)
+        else:
+            # Compute the distances of the new (virtual) cluster with all existing clusters
+            i = 0
+            for existing_cluster in self.cluster_list:
+                distance = self.compute_distance(existing_cluster, new_cluster)
+                if (i == 0):
+                    min_distance = distance
+                    min_cluster = existing_cluster
+                    i = i + 1
+                else:
+                    if (distance < min_distance):
+                        min_distance = distance
+                        min_cluster = existing_cluster
+
+
+            # Then we decide. If the list is already full, then we merge to the closest distance
+            if len(self.cluster_list) >= self.num_clusters:
+
+                # Merge the new cluster to the closest one
+                self.update_center(new_cluster, min_cluster)
+                min_cluster.update_statistics(new_cluster)
+                selected_cluster = min_cluster
+
+            # If the list is not full, we decide whether we want to create a new cluster or merge to the closest one.
+            else: 
+
+                if (min_distance == 0):
+
+                    # Merge the new cluster to the closest one
+                    self.update_center(new_cluster, min_cluster)
+                    min_cluster.update_statistics(new_cluster)
+                    selected_cluster = min_cluster
+
+                else:
+
+                    # Append the new cluster directly to the list
+                    self.cluster_list.append(new_cluster)
+                    selected_cluster = new_cluster
+                    self.current_cluster_id = self.current_cluster_id + 1
+
+        # We append the label (cluster_id) to the list 
+        # self.append_label(selected_cluster.get_id())
+        return selected_cluster.get_id()
 
 	# Computes the result of clustering one new packet following the fast version of the representative_based clustering algorithm.
     def fit_fast(self, packet, ip_len):

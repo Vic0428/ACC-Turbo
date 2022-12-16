@@ -63,7 +63,7 @@ if __name__ == '__main__':
 
         # We create a new instance of the clustering performance analyzer, and we start the analysis
         analyzer = analyzer.Analyzer(simulation_id, input_pcap_list, input_pcap_range_enabled, input_pcap_time_adjustment, input_pcap_time_start, input_pcap_time_end, clustering_type, num_clusters, reset_clusters_window, learning_rate, feature_set, normalize_feature_values, prioritizing_type, update_priorities_window, monitoring_window, throughput_logging, traffic_distributions_logging, traffic_distributions_histogram_logging, clustering_performance_logging, clustering_performance_time_logging, priority_performance_logging, priority_performance_time_logging, throughput_priorities_logging, signature_evaluation_logging, output_logfiles_seed, output_pcap, output_pcap_seed)
-        analyzer.execute()
+        analyzer.serial_execute()
 
         # We now need to merge all the individual log files
         if clustering_performance_logging == "True":
