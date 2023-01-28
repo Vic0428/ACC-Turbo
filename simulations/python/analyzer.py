@@ -187,6 +187,25 @@ class Analyzer():
                     clustering_performance_time_file.write("#Date_Time,Purity,True_Negative_Rate,True_Positive_Rate,Recall_Benign,Recall_Malicious\n")
 
 
+
+        # Throughput logging (actually numpackets)
+        if throughput_logging == "True":        
+
+            if input_pcap_range_enabled == "True":
+        
+                file_id = input_pcap_name.split('/euler/CICDDoS2019/data/SAT-01-12-2018_0')[1]
+                throughput_file = open(output_logfiles_seed + file_id + '_throughput.dat', 'w+')
+                if file_id == self.input_pcap_list[0].split('/euler/CICDDoS2019/data/SAT-01-12-2018_0')[1]:
+                    throughput_file.write("#Time,Benign_throughput,Malicious_throughput\n")
+
+            else:
+                throughput_file = open(output_logfiles_seed + '_throughput.dat', 'w+')
+                throughput_file.write("#Time,Benign_throughput,Malicious_throughput\n")
+
+            # We initialize the time loggers
+            current_throughput_benign = 0
+            current_throughput_malicious = 0
+
         ##################
         # We start processing packets
         ##################
@@ -506,6 +525,24 @@ class Analyzer():
                 else:
                     raise Exception("Simulation ID not supported: {}".format(simulation_id))
 
+
+            if throughput_logging == "True":
+
+                if(simulation_id == "CICDDoS2019"):
+                    if (src == "172.16.0.5"):
+                        current_throughput_malicious = current_throughput_malicious + int(ip.len)*8 + (60*8) + (60*8) # We put the 60 bytes headers that Netbench will add (instead of the original headers)
+                    else:
+                        current_throughput_benign = current_throughput_benign + int(ip.len)*8 + (60*8) + (60*8)
+
+                elif(simulation_id == "Morphing"):
+                    if (src == "192.168.0.5"):
+                        current_throughput_malicious = current_throughput_malicious + int(ip.len)*8 + (60*8) + (60*8)
+                    else:
+                        current_throughput_benign = current_throughput_benign + int(ip.len)*8 + (60*8) + (60*8)
+
+                else:
+                    raise Exception("Simulation ID not supported: {}".format(simulation_id))
+
             ##################
             # We perform the per-monitoring-window logging
             ##################
@@ -627,7 +664,14 @@ class Analyzer():
                             # Offline k-means
                             clustering = KMeans(n_clusters=num_clusters) # Here we just create a new instance, such that we don't have previous labels
 
+                    
+                    # Throughput logging
+                    if throughput_logging == "True":
+                        throughput_file.write(str(date_time) + "," + str(current_throughput_benign) + "," + str(current_throughput_malicious) + "\n")                    
+                        current_throughput_benign = 0
+                        current_throughput_malicious = 0
 
+                    
                     # We update the time tracker
                     last_monitoring_update = date_time
 
@@ -688,3 +732,5 @@ class Analyzer():
             # We close the clustering performance logging file
             if clustering_performance_time_logging == "True":
                 clustering_performance_time_file.close()
+        
+
