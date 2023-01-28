@@ -239,7 +239,7 @@ class OnlineEpochKmeans(clustering_algorithm.ClusteringAlgorithm):
             self.cluster_list.append(new_cluster)
     
     def fit_batch(self, batch_packets, batch_ip_lens, perfect=True):
-        print("Invoke to fit {} packets".format(len(batch_packets)))
+        # print("Invoke to fit {} packets".format(len(batch_packets)))
         mp_key = {}
         mp_val = {}
         for packet, ip_len in zip(batch_packets, batch_ip_lens):

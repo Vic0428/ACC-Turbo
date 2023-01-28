@@ -12,6 +12,12 @@ from clustering import range_based_clustering, representative_based_clustering, 
 from sklearn.cluster import KMeans
 import numpy as np
 
+
+# To make it 100 Gbps
+SPEED_UP_RATIO = 125
+# EPoch_granularity
+GRANULARITY_IN_US = 100
+
 class Analyzer():
 
     def __init__(self, simulation_id, input_pcap_list, input_pcap_range_enabled, input_pcap_time_adjustment, input_pcap_time_start, input_pcap_time_end, clustering_type, num_clusters, reset_clusters_window, learning_rate, feature_set, normalize_feature_values, prioritizing_type, update_priorities_window, monitoring_window, throughput_logging, traffic_distributions_logging, traffic_distributions_histogram_logging, clustering_performance_logging, clustering_performance_time_logging, priority_performance_logging, priority_performance_time_logging, throughput_priorities_logging, signature_evaluation_logging, output_logfiles_seed, output_pcap, output_pcap_seed):
@@ -548,7 +554,7 @@ class Analyzer():
             ##################
             if clustering_type == "Online_Epoch_KMeans":
                 delta_in_ms = int((date_time - last_epoch_update).total_seconds() * 1000)
-                if delta_in_ms >= 100:
+                if delta_in_ms >= (SPEED_UP_RATIO * GRANULARITY_IN_US) / 1000 :
                     last_epoch_update = date_time
                     clustering.fit_batch(batch_packets, batch_ip_lens)
                     batch_packets = []
