@@ -6,9 +6,9 @@
 
 2. Change the `SPEED_UP_RATIO` constant in `simulations/python/analyzer.py` 
 
-3. `./run_fig_10.sh` in `simulations` folder
+3. `./run_fig_10.sh` in `simulations` folder and we can see the generated `simulations/python/plots/num_clusters/clustering_performance_logs.dat`
 
-4. 
+4. `python3 plot.py python/plots/num_clusters/clustering_performance_logs.dat` in the `simulations` folder and we can see the generated figure. 
 
 
 This repository contains the code used in [ACC-Turbo](https://nsg.ee.ethz.ch/fileadmin/user_upload/sigcomm22-final615.pdf), which will be presented at [SIGCOMM'22](https://conferences.sigcomm.org/sigcomm/2022/).
