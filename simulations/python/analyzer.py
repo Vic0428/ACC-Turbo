@@ -14,7 +14,7 @@ import numpy as np
 
 
 # To make it 100 Gbps
-SPEED_UP_RATIO = 125
+SPEED_UP_RATIO = 108
 # EPoch_granularity
 GRANULARITY_IN_US = 100
 

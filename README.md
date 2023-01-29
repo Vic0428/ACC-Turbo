@@ -1,9 +1,14 @@
 # ACC-Turbo
 
 ## For vic's expereiment
-1. Derives the necessary speedup `python3 simulations/python/plots/num_clusters/calc_speedup.py /euler/CICDDoS2019/data/statistics` 
+1. Derives the necessary speedup `python3 simulations/calc_speedup.py /euler/CICDDoS2019/data/statistics` 
     * Example: Needs 108X speedup to achieve 100Gbps throughput
 
+2. Change the `SPEED_UP_RATIO` constant in `simulations/python/analyzer.py` 
+
+3. `./run_fig_10.sh` in `simulations` folder
+
+4. 
 
 
 This repository contains the code used in [ACC-Turbo](https://nsg.ee.ethz.ch/fileadmin/user_upload/sigcomm22-final615.pdf), which will be presented at [SIGCOMM'22](https://conferences.sigcomm.org/sigcomm/2022/).
