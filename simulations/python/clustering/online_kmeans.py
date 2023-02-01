@@ -213,9 +213,9 @@ class OnlineEpochKmeans(clustering_algorithm.ClusteringAlgorithm):
 
     # Method to update the centroid of "dst_cluster" with the information of "src_cluster"
     def update_center(self, src_cluster, dst_cluster):
-        shift_offset = 4
+        static_shift_offset = 4
         for feature in self.feature_list:
-            update_val = (dst_cluster.signature[feature][0] + (src_cluster.packets*(src_cluster.signature[feature][0]- dst_cluster.signature[feature][0])) >> shift_offset)
+            update_val = (dst_cluster.signature[feature][0] + (src_cluster.packets*(src_cluster.signature[feature][0]- dst_cluster.signature[feature][0])) >> static_shift_offset)
             dst_cluster.signature[feature] = (update_val, update_val)
         
     # Method to initialize the centroids with some values (e.g., the offline-clustering result of the previous batch)
