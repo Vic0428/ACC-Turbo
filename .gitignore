@@ -6,3 +6,5 @@
 simulations/DDoS2019/*
 !simulations/DDoS2019/README.md
 **/*.dat
+**/*.png
+**/*.eps
