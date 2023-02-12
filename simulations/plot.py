@@ -15,7 +15,10 @@ params = {'legend.fontsize': font_size,
          'xtick.labelsize':font_size,
          'ytick.labelsize':font_size,
          'lines.linewidth': 2,
-         'lines.markersize': 8,
+         'lines.markersize': 10,
+         'lines.markerfacecolor': 'none',
+         'lines.markeredgecolor': 'auto',
+         'lines.markeredgewidth': 2.0,
          'font.weight': 3}
 pylab.rcParams.update(params)
 
@@ -69,8 +72,8 @@ if __name__ == "__main__":
     ax3.set_xlim(left=0)
     ax3.legend()
     plt.tight_layout()
-    fig.savefig("ddos_avg_recall.eps")
-    fig.savefig("ddos_avg_recall.png")
+    fig.savefig("ddos_purity_recall.eps")
+    fig.savefig("ddos_purity_recall.png")
 
     print("[RMTF] Recall: {}".format( (df.iloc[0:5, 4] + df.iloc[0:5, 5]) / 2))
     print("[Switch+CPU] Recall: {}".format((df.iloc[6:11, 4] + df.iloc[6:11, 5]) / 2))
