@@ -15,7 +15,10 @@ params = {'legend.fontsize': font_size,
          'xtick.labelsize':font_size,
          'ytick.labelsize':font_size,
          'lines.linewidth': 2,
-         'lines.markersize': 8,
+         'lines.markersize': 10,
+         'lines.markerfacecolor': 'none',
+         'lines.markeredgecolor': 'auto',
+         'lines.markeredgewidth': 2.0,
          'font.weight': 3}
 pylab.rcParams.update(params)
 
@@ -38,30 +41,19 @@ if __name__ == "__main__":
     # fig.savefig("ddos_purity.eps")
     # fig.savefig("ddos_purity.png")
 
-    print("[RMTF] Purity: {}".format(df.iloc[0:5, 1]))
-    print("[Ideal CPU] Purity: {}".format(df.iloc[6:11, 1]))
-    print("[Switch] Purity: {}".format(df.iloc[5, 1]))
-    # ## For Recall Benign
-    # fig, ax2 = plt.subplots(1, 1, figsize=(4.5, 4))
-    # ax2.plot(n_cluster_list, df.iloc[0:5, 4], "-o", label="Online K-means")
-    # ax2.plot(n_cluster_list, df.iloc[6:11, 4], "-o", label="Offline K-means")
-    # ax2.axhline(y=df.iloc[5, 4], linestyle="--", color='gray', label="ACC-Turbo")
-    # # ax2.set_yticks([80 + i for i in range(0, 21, 4)])
-    # # ax2.set_ylim(bottom=84)
-    # ax2.set_xticks(n_cluster_list)
-    # ax2.set_xlabel("Num Clusters", labelpad=0)
-    # ax2.set_ylabel("Recall Benign (%)", labelpad=0)
-    # ax2.legend(bbox_to_anchor=(0.65, 0.3), loc='upper left', borderaxespad=0)
-    # fig.savefig("ddos_recall.eps")
-    # fig.savefig("ddos_recall.png")
+    # print("[RMTF] Purity: {}".format(df.iloc[0:5, 1]))
+    # print("[Ideal CPU] Purity: {}".format(df.iloc[6:11, 1]))
+    # print("[Switch] Purity: {}".format(df.iloc[5, 1]))
 
     ## For average recall
     # fig, ax3 = plt.subplots(1, 1)
-    ax3.plot(n_cluster_list, (df.iloc[0:5, 4] + df.iloc[0:5, 5]) / 2, "-o", label="[F3] Online K-means")
+    switch = (df.iloc[5, 4] + df.iloc[5, 5])/2
+    f3 = (df.iloc[0:5, 4] + df.iloc[0:5, 5]) / 2
+    print("Max ratio: {}".format(max((100 - switch) / (100-f3))))
+    
+    ax3.plot(n_cluster_list, f3, "-o", label="[F3] Online K-means")
     ax3.plot(n_cluster_list, (df.iloc[6:11, 4] + df.iloc[6:11, 5]) / 2, "-o", label="[Ideal CPU] Offline K-means")
-    ax3.axhline(y=(df.iloc[5, 4] + df.iloc[5, 5])/2, linestyle="--", color='gray', label="[Switch] ACC-Turbo")
-    # ax2.set_yticks([80 + i for i in range(0, 21, 4)])
-    # ax2.set_ylim(bottom=84)
+    ax3.axhline(y=switch, linestyle="--", color='gray', label="[Switch] ACC-Turbo")
     ax3.set_xticks([0] + n_cluster_list)
     ax3.set_xlabel("Num Clusters", labelpad=0)
     ax3.set_ylabel("Recall(%)", labelpad=0)
@@ -69,20 +61,10 @@ if __name__ == "__main__":
     ax3.set_xlim(left=0)
     ax3.legend()
     plt.tight_layout()
-    fig.savefig("ddos_avg_recall.eps")
-    fig.savefig("ddos_avg_recall.png")
+    fig.savefig("ddos_purity_recall.eps")
+    fig.savefig("ddos_purity_recall.png")
 
-    print("[RMTF] Recall: {}".format( (df.iloc[0:5, 4] + df.iloc[0:5, 5]) / 2))
-    print("[Switch+CPU] Recall: {}".format((df.iloc[6:11, 4] + df.iloc[6:11, 5]) / 2))
-    print("[Switch] Recall: {}".format((df.iloc[5, 4] + df.iloc[5, 5])/2))
-    # fig, ax3 = plt.subplots(1, 1, figsize=(4.5, 4))
-    # ax3.plot(df.iloc[0:5, 1], df.iloc[0:5, 4], "-o", label="Switch+FPGA")
-    # ax3.plot(df.iloc[6:11, 1], df.iloc[6:11, 4], "-o", label="Switch+CPU")
-    # ax3.plot(df.iloc[5, 1], df.iloc[5, 4], "o", label="Switch-only")
-    # ax3.set_ylabel("Purity (%)", labelpad=0)
-    # ax3.set_ylabel("Recall Benign (%)", labelpad=0)
-    # ax3.legend()
-
-    # fig.savefig("ddos_tradeoff.eps")
-    # fig.savefig("ddos_tradeoff.png")
-
+    # print("[RMTF] Recall: {}".format( (df.iloc[0:5, 4] + df.iloc[0:5, 5]) / 2))
+    # print("[Switch+CPU] Recall: {}".format((df.iloc[6:11, 4] + df.iloc[6:11, 5]) / 2))
+    # print("[Switch] Recall: {}".format((df.iloc[5, 4] + df.iloc[5, 5])/2))
+   
