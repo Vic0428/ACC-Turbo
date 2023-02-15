@@ -35,7 +35,7 @@ if __name__ == "__main__":
     ax1.set_xticks([0] + n_cluster_list)
     ax1.set_xlabel("Num Clusters")
     ax1.set_ylabel("Purity (%)")
-    ax1.set_ylim(bottom=60, top=102)
+    ax1.set_ylim(bottom=50, top=102)
     ax1.set_xlim(left=0)
     ax1.legend()
     # fig.savefig("ddos_purity.eps")
@@ -47,24 +47,33 @@ if __name__ == "__main__":
 
     ## For average recall
     # fig, ax3 = plt.subplots(1, 1)
-    switch = (df.iloc[5, 4] + df.iloc[5, 5])/2
-    f3 = (df.iloc[0:5, 4] + df.iloc[0:5, 5]) / 2
+    # switch = (df.iloc[5, 4] + df.iloc[5, 5])/2
+    # f3 = (df.iloc[0:5, 4] + df.iloc[0:5, 5]) / 2
+    # cpu = (df.iloc[6:11, 4] + df.iloc[6:11, 5]) / 2,
+
+    # switch = df.iloc[5, 4]
+    # f3 = df.iloc[0:5, 4]
+    # cpu = df.iloc[6:11, 4]
+
+    switch = df.iloc[5, 5]
+    f3 = df.iloc[0:5, 5]
+    cpu = df.iloc[6:11, 5]
     print("Max ratio: {}".format(max((100 - switch) / (100-f3))))
     
     ax3.plot(n_cluster_list, f3, "-o", label="[F3] Online K-means")
-    ax3.plot(n_cluster_list, (df.iloc[6:11, 4] + df.iloc[6:11, 5]) / 2, "-o", label="[Ideal CPU] Offline K-means")
+    ax3.plot(n_cluster_list, cpu, "-o", label="[Ideal CPU] Offline K-means")
     ax3.axhline(y=switch, linestyle="--", color='gray', label="[Switch] ACC-Turbo")
     ax3.set_xticks([0] + n_cluster_list)
     ax3.set_xlabel("Num Clusters", labelpad=0)
-    ax3.set_ylabel("Recall(%)", labelpad=0)
-    ax3.set_ylim(bottom=60, top=102)
+    ax3.set_ylabel("Recall Malicious(%)", labelpad=0)
+    ax3.set_ylim(bottom=50, top=102)
     ax3.set_xlim(left=0)
-    ax3.legend()
+    ax3.legend(loc='center left', bbox_to_anchor=(0, 0.4))
     plt.tight_layout()
     fig.savefig("ddos_purity_recall.eps")
     fig.savefig("ddos_purity_recall.png")
 
-    print("[RMTF] Recall: {}".format( (df.iloc[0:5, 4] + df.iloc[0:5, 5]) / 2))
-    print("[Switch+CPU] Recall: {}".format((df.iloc[6:11, 4] + df.iloc[6:11, 5]) / 2))
-    print("[Switch] Recall: {}".format((df.iloc[5, 4] + df.iloc[5, 5])/2))
+    print("[RMTF] Recall: {}".format(f3))
+    print("[Switch+CPU] Recall: {}".format(cpu))
+    print("[Switch] Recall: {}".format(switch))
    
