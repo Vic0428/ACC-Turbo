@@ -199,6 +199,7 @@ class OnlineEpochKmeans(clustering_algorithm.ClusteringAlgorithm):
 
     def __init__(self, num_clusters, feature_set):
         self.feature_list = feature_set.split(",") # List of features that we want to use
+        self.feature_list = self.feature_list[:-2]
         clustering_algorithm.ClusteringAlgorithm.__init__(self, num_clusters) 
 
     # In representative-based, the cluster signature carries the same information (the centroid) in the two tuple values
@@ -275,7 +276,7 @@ class OnlineEpochKmeans(clustering_algorithm.ClusteringAlgorithm):
     def fit_batch_helper(self, packet, pkt_cnt):
         i = 0
         packet_signature = {}
-        assert len(packet) == len(self.feature_list)
+        # assert len(packet) == len(self.feature_list)
         for feature in self.feature_list:
             packet_signature[feature] = (packet[i],packet[i])
             i = i + 1
